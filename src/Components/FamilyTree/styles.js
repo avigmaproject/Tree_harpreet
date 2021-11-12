@@ -9,13 +9,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
   },
   nodesLinkContainer: {
-    padding: 2,
-    borderRadius: 18 / 2,
-  },
-  linkImageStyle: {
-    tintColor: '#fff',
-    width: 18,
-    height: 18,
+    width: 24,
+    height: 24,
+    borderRadius: 24 / 2,
   },
   spouseInfoContainer: {
     flexDirection: 'row',
