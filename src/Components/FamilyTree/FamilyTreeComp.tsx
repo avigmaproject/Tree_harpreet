@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  Image,
   TouchableOpacity,
   Dimensions,
   ImageBackground,
@@ -12,8 +11,11 @@ import {
   ViewStyle,
   ImageStyle,
   GestureResponderEvent,
+  Alert,
 } from 'react-native';
 import Svg, {Line} from 'react-native-svg';
+import {editedTextType} from '.';
+import {editedTextParents, isEditingType} from '../../../App';
 import styles from './styles';
 
 const {width} = Dimensions.get('screen');
@@ -26,11 +28,12 @@ export type dataObjectType = {
   id: number;
   _comment: string;
   name: string;
-  spouse: string;
+  spouse: string | null;
   spouseProfile: string;
   dob: string;
   dod: null | string;
   profile: string;
+  order: number;
   children: Array<dataObjectType>;
 };
 
@@ -47,6 +50,15 @@ export type Props = {
   familyGap?: number;
   strokeWidth?: number;
   titleColor?: string;
+  loaderColor?: string;
+  isEditing: isEditingType;
+  setIsEditing: (val: isEditingType) => void;
+  editedText: Partial<editedTextType> | undefined;
+  updateEditedText: (val: editedTextType) => void;
+  isSubmitted: boolean;
+  updateIsSubmitted: (val: boolean) => void;
+  maxLevel: number;
+  updateMaxLevel: (val: number) => void;
 };
 
 const defaultProps: Partial<Props> = {
@@ -80,28 +92,46 @@ const defaultProps: Partial<Props> = {
   nodeTitleColor: '#00ff00',
   familyGap: 30,
   strokeWidth: 5,
+  loaderColor: '#0095ff',
 };
 
 type State = {
+  treeData: Array<dataObjectType>;
   showStatus: LooseObject;
   isRefresh: boolean;
   clickedPos: {x: number; y: number} | undefined;
   clickedLevel: number | undefined;
   treeDimensions: {width: number};
+  targetId: number | undefined;
 };
 
 const FamilyTreeComp: React.FC<Props> = props => {
   const [state, setState] = useState<State>({
+    treeData: props.data,
     showStatus: {},
     isRefresh: false,
     clickedPos: undefined,
     clickedLevel: undefined,
     treeDimensions: {width: width},
+    targetId: undefined,
   });
+  const [maxLevelCount, setMaxLevelCount] = useState(0);
   const flatListRef = useRef(null);
 
-  const {showStatus, isRefresh} = state;
-  const {title, titleStyle, titleColor} = props;
+  const {showStatus, isRefresh, treeData, targetId} = state;
+  const {
+    title,
+    titleStyle,
+    titleColor,
+    loaderColor,
+    isEditing,
+    setIsEditing,
+    editedText,
+    isSubmitted,
+    updateIsSubmitted,
+    maxLevel,
+    updateMaxLevel,
+  } = props;
 
   const updateState = (updatedState: Partial<State>) => {
     setState({...state, ...updatedState});
@@ -110,6 +140,12 @@ const FamilyTreeComp: React.FC<Props> = props => {
   const hasChildren = (member: dataObjectType) => {
     return member.children && member.children.length;
   };
+
+  let tempMaxLevel = 0;
+  useEffect(() => {
+    console.log(tempMaxLevel);
+    updateMaxLevel(tempMaxLevel);
+  }, []);
 
   const isShowStatusExist = (i: number) => {
     const stringId = '' + i;
@@ -149,13 +185,90 @@ const FamilyTreeComp: React.FC<Props> = props => {
     }
   }, [isRefresh]);
 
+  const totalWords = (str: string) => {
+    return str.split(' ').length;
+  };
+
+  const isParentDataValid = (data: editedTextParents): boolean => {
+    if (
+      data.fatherText.name !== '' &&
+      data.fatherText.dob !== '' &&
+      data.fatherText.profile !== ''
+    ) {
+      if (data.motherText.name !== '' && data.motherText.profile) {
+        return true;
+      } else return false;
+    } else return false;
+  };
+
+  useEffect(() => {
+    if (isSubmitted) {
+      console.log('changed ', editedText, isEditing.type, targetId);
+      if (editedText === undefined) {
+        Alert.alert('Please fill data!');
+        return;
+      }
+      switch (isEditing.type) {
+        case 'parent':
+          if (isParentDataValid(editedText as editedTextParents)) {
+            updateParentData(
+              treeData[0],
+              targetId!,
+              editedText as editedTextParents,
+            );
+          } else {
+            Alert.alert('Please fill data!');
+          }
+          break;
+        case 'spouse':
+          break;
+        case 'child':
+          break;
+      }
+    }
+  }, [isSubmitted]);
+
+  const addParent = (id: number, level: number) => {
+    setIsEditing({modalVisible: true, selectedLevel: level});
+    updateState({targetId: id});
+  };
+
+  let updatedData: dataObjectType | undefined = undefined;
+  const updateParentData = (
+    data: dataObjectType,
+    targetId: number,
+    newData: editedTextParents,
+  ) => {
+    if (data.id === targetId) {
+      console.log('NEW DATA: ', newData);
+      updatedData = {
+        id: data.id + 1,
+        _comment: `${newData.fatherText.name} and Family`,
+        name: newData.fatherText.name,
+        spouse: newData.motherText.name,
+        spouseProfile:
+          'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
+        dob: '03/03/1925',
+        dod: null,
+        order: 1,
+        profile:
+          'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
+        children: [props.data[0]],
+      };
+      setIsEditing({modalVisible: false, type: undefined});
+      updateIsSubmitted(true);
+      updateState({treeData: [updatedData]});
+    }
+  };
+
   const renderTree = (data: Array<dataObjectType>, level: number) => {
     return (
       <FlatList
         ref={flatListRef}
         data={data}
         horizontal={true}
-        contentContainerStyle={{padding: 50}}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{padding: 50, backgroundColor: '#fff'}}
         keyExtractor={(item, index) => `${item.name} + ${item.spouse}`}
         listKey={(item, index) => `${item.name} + ${item.spouse}`}
         initialScrollIndex={0}
@@ -191,19 +304,24 @@ const FamilyTreeComp: React.FC<Props> = props => {
                   flexDirection: 'row',
                   alignItems: 'center',
                 }}>
-                <View style={props.nodeStyle}>
-                  <Image
+                <TouchableOpacity
+                  style={props.nodeStyle}
+                  onPress={() => addParent(item.id, level)}>
+                  <ImageBackground
                     source={{uri: info.profile}}
                     style={{...props.imageStyle, alignItems: 'center'}}
-                  />
-                  <Text
-                    style={{
-                      ...props.nodeTitleStyle,
-                      color: props.nodeTitleColor,
-                    }}>
-                    {info.name}
-                  </Text>
-                </View>
+                    borderRadius={50}>
+                    <Text
+                      style={{
+                        ...styles.nodeTitleStyle,
+                        bottom: -6 * totalWords(info.name),
+                        ...props.nodeTitleStyle,
+                        color: props.nodeTitleColor,
+                      }}>
+                      {info.name}
+                    </Text>
+                  </ImageBackground>
+                </TouchableOpacity>
                 {info.spouse && (
                   <View
                     style={[
@@ -307,17 +425,23 @@ const FamilyTreeComp: React.FC<Props> = props => {
                         ...props.nodeStyle,
                         alignSelf: 'center',
                       }}>
-                      <Image
-                        source={{uri: info.profile}}
-                        style={{...props.imageStyle, alignItems: 'center'}}
-                      />
-                      <Text
+                      <ImageBackground
+                        source={{uri: info.spouseProfile}}
                         style={{
-                          ...props.nodeTitleStyle,
-                          color: props.nodeTitleColor,
-                        }}>
-                        {info.spouse}
-                      </Text>
+                          ...props.imageStyle,
+                          alignItems: 'center',
+                        }}
+                        borderRadius={50}>
+                        <Text
+                          style={{
+                            ...styles.nodeTitleStyle,
+                            bottom: -6 * totalWords(info.name),
+                            ...props.nodeTitleStyle,
+                            color: props.nodeTitleColor,
+                          }}>
+                          {info.spouse}
+                        </Text>
+                      </ImageBackground>
                     </View>
                   </View>
                 )}
@@ -338,7 +462,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
                           {
                             flexDirection: 'row',
                           },
-                          level === 1 && {marginLeft: 5},
+                          // level === 1 && {marginLeft: 5},
                         ]}>
                         <View>
                           <Svg height="50" width="100%">
@@ -397,6 +521,11 @@ const FamilyTreeComp: React.FC<Props> = props => {
                       </View>
                     );
                   })}
+                {(() => {
+                  if (!hasChildren(item) && maxLevel < level) {
+                    tempMaxLevel = level;
+                  }
+                })()}
               </View>
             </View>
           );
@@ -408,7 +537,21 @@ const FamilyTreeComp: React.FC<Props> = props => {
   return (
     <View style={{flex: 1}}>
       <Text style={{...titleStyle, color: titleColor}}>{title}</Text>
-      {!isRefresh && renderTree(props.data, 1)}
+      {/* {isRefresh ? (
+        <View
+          style={{
+            height: treeDimensions.height,
+            width: treeDimensions.width,
+            ...styles.centeredView,
+          }}>
+          <ActivityIndicator
+            animating={true}
+            color={loaderColor}
+            size="large"
+          />
+        </View>
+      ) : ( */}
+      {!isRefresh && renderTree(treeData, 1)}
       {/* )} */}
     </View>
   );
