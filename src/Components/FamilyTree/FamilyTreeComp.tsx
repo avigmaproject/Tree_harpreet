@@ -202,34 +202,39 @@ const FamilyTreeComp: React.FC<Props> = props => {
   };
 
   useEffect(() => {
-    if (isSubmitted) {
-      console.log('changed ', editedText, isEditing.type, targetId);
-      if (editedText === undefined) {
-        Alert.alert('Please fill data!');
-        return;
-      }
-      switch (isEditing.type) {
-        case 'parent':
-          if (isParentDataValid(editedText as editedTextParents)) {
-            updateParentData(
-              treeData[0],
-              targetId!,
-              editedText as editedTextParents,
-            );
-          } else {
-            Alert.alert('Please fill data!');
-          }
-          break;
-        case 'spouse':
-          break;
-        case 'child':
-          break;
+    let isActive = true;
+    function submitData() {
+      if (isSubmitted) {
+        console.log('changed ', editedText, isEditing.type, targetId);
+        switch (isEditing.type) {
+          case 'parent':
+            if (isParentDataValid(editedText as editedTextParents)) {
+              if (isActive) {
+                updateParentData(
+                  treeData[0],
+                  targetId!,
+                  editedText as editedTextParents,
+                );
+              }
+            } else {
+              Alert.alert('Please fill data!');
+            }
+            break;
+          case 'spouse':
+            break;
+          case 'child':
+            break;
+        }
       }
     }
+    submitData();
+    return () => {
+      isActive = false;
+    };
   }, [isSubmitted]);
 
-  const addParent = (id: number, level: number) => {
-    setIsEditing({modalVisible: true, selectedLevel: level});
+  const addParent = (id: number, selectedLevel: number, hasSpouse: boolean) => {
+    setIsEditing({modalVisible: true, selectedLevel, hasSpouse});
     updateState({targetId: id});
   };
 
@@ -239,26 +244,23 @@ const FamilyTreeComp: React.FC<Props> = props => {
     targetId: number,
     newData: editedTextParents,
   ) => {
-    if (data.id === targetId) {
-      console.log('NEW DATA: ', newData);
-      updatedData = {
-        id: data.id + 1,
-        _comment: `${newData.fatherText.name} and Family`,
-        name: newData.fatherText.name,
-        spouse: newData.motherText.name,
-        spouseProfile:
-          'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
-        dob: '03/03/1925',
-        dod: null,
-        order: 1,
-        profile:
-          'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
-        children: [props.data[0]],
-      };
-      setIsEditing({modalVisible: false, type: undefined});
-      updateIsSubmitted(true);
-      updateState({treeData: [updatedData]});
-    }
+    updatedData = {
+      id: data.id + 1,
+      _comment: `${newData.fatherText.name} and Family`,
+      name: newData.fatherText.name,
+      spouse: newData.motherText.name,
+      spouseProfile:
+        'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
+      dob: '03/03/1925',
+      dod: null,
+      order: 1,
+      profile:
+        'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
+      children: [props.data[0]],
+    };
+    setIsEditing({modalVisible: false, type: undefined});
+    updateIsSubmitted(false);
+    updateState({treeData: [updatedData]});
   };
 
   const renderTree = (data: Array<dataObjectType>, level: number) => {
@@ -306,7 +308,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
                 }}>
                 <TouchableOpacity
                   style={props.nodeStyle}
-                  onPress={() => addParent(item.id, level)}>
+                  onPress={() => addParent(item.id, level, spouse !== null)}>
                   <ImageBackground
                     source={{uri: info.profile}}
                     style={{...props.imageStyle, alignItems: 'center'}}
