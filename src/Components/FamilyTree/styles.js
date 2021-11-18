@@ -9,9 +9,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
   },
   nodesLinkContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 24 / 2,
+    width: 21,
+    height: 21,
+    borderRadius: 21 / 2,
   },
   spouseInfoContainer: {
     flexDirection: 'row',

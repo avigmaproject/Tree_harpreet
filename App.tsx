@@ -11,14 +11,12 @@ import {
   Text,
   TouchableWithoutFeedback,
   View,
+  TouchableOpacity,
 } from 'react-native';
-import {TouchableOpacity} from 'react-native-gesture-handler';
 import ChildComp from './src/Components/FamilyTree/AddDetailsComp/ChildComp';
 import ParentComp from './src/Components/FamilyTree/AddDetailsComp/ParentComp';
 import SpouseComp from './src/Components/FamilyTree/AddDetailsComp/SpouseComp';
-import {dataObjectType} from './src/Components/FamilyTree/FamilyTreeComp';
 import FamilyTree from './src/Components/FamilyTree/index';
-import TextInputWithLabel from './src/Components/TextInputWithLabel';
 import {profileUrl} from './src/constants/constants';
 
 const SampleData = require('./src/assets/sample.json');
@@ -219,7 +217,7 @@ const App: React.FC = props => {
   };
 
   return (
-    <SafeAreaView style={{flex: 1}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: '#DAE6E4'}}>
       <FamilyTree
         data={SampleData}
         isEditing={isEditing}
@@ -234,12 +232,12 @@ const App: React.FC = props => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
-          setIsEditing({modalVisible: !modalVisible});
+          setIsEditing({modalVisible: false});
         }}>
         <Pressable
           style={styles.centeredView}
           onPress={() => {
-            setIsEditing({modalVisible: !modalVisible});
+            setIsEditing({modalVisible: false});
           }}>
           <Pressable
             style={styles.modalView}
@@ -352,10 +350,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.2)',
-    marginTop: 22,
   },
   modalView: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     borderRadius: 20,
     paddingTop: 32,
     shadowColor: '#000',

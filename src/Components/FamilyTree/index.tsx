@@ -1,4 +1,4 @@
-import React, {Fragment} from 'react';
+import React, {Fragment, useRef} from 'react';
 import {SafeAreaView, ScrollView, StatusBar} from 'react-native';
 import {
   editedTextChild,
@@ -18,7 +18,7 @@ export type Props = {
   isEditing: isEditingType;
   setIsEditing: (val: isEditingType) => void;
   editedText: Partial<editedTextType> | undefined;
-  updateEditedText: (val: editedTextType) => void;
+  updateEditedText: (val: editedTextType | undefined) => void;
   isSubmitted: boolean;
   updateIsSubmitted: (val: boolean) => void;
 };
@@ -34,13 +34,19 @@ const FamilyTree: React.FC<Props> = props => {
     updateIsSubmitted,
   } = props;
 
+  const scrollViewRef = useRef(null);
+
   return (
     <Fragment>
-      <ScrollView contentInsetAdjustmentBehavior="automatic">
+      <ScrollView
+        ref={scrollViewRef}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}>
         <FamilyTreeComp
           data={data}
           title="Amit and Family"
-          pathColor="#7C7C7E"
+          pathColor="#EAF7ED"
+          loaderColor="#30AD4A"
           siblingGap={20}
           nodeStyle={{
             width: 100,
@@ -49,15 +55,20 @@ const FamilyTree: React.FC<Props> = props => {
             alignItems: 'center',
           }}
           familyGap={5}
-          strokeWidth={5}
+          strokeWidth={2}
           titleColor="red"
           nodeTitleColor="black"
+          nodeTitleStyle={{
+            color: '#fff',
+            borderWidth: 0,
+          }}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
           editedText={editedText}
           updateEditedText={updateEditedText}
           isSubmitted={isSubmitted}
           updateIsSubmitted={updateIsSubmitted}
+          scrollViewRef={scrollViewRef}
         />
       </ScrollView>
     </Fragment>

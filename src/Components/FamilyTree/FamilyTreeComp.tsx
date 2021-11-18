@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useRef, RefObject} from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   GestureResponderEvent,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import Svg, {Line} from 'react-native-svg';
 import {editedTextType} from '.';
@@ -34,7 +35,6 @@ interface LooseObject {
 
 export type dataObjectType = {
   id: number;
-  _comment: string;
   name: string;
   spouse: string | null;
   spouseProfile: string;
@@ -60,43 +60,10 @@ export type Props = {
   isEditing: isEditingType;
   setIsEditing: (val: isEditingType) => void;
   editedText: Partial<editedTextType> | undefined;
-  updateEditedText: (val: editedTextType) => void;
+  updateEditedText: (val: editedTextType | undefined) => void;
   isSubmitted: boolean;
   updateIsSubmitted: (val: boolean) => void;
-};
-
-const defaultProps: Partial<Props> = {
-  title: 'My Family Tree',
-  titleStyle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  titleColor: 'black',
-  nodeStyle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  nodeTitleStyle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  pathColor: '#00ffd8',
-  siblingGap: 50,
-  imageStyle: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 50,
-    resizeMode: 'cover',
-  },
-  nodeTitleColor: '#00ff00',
-  familyGap: 30,
-  strokeWidth: 5,
-  loaderColor: '#0095ff',
+  scrollViewRef: RefObject<ScrollView>;
 };
 
 type State = {
@@ -107,6 +74,7 @@ type State = {
   clickedLevel: number | undefined;
   treeDimensions: {width: number; height?: number};
   targetId: number | undefined;
+  elementDimensions: Array<{x: number; y: number}>;
 };
 
 const FamilyTreeComp: React.FC<Props> = props => {
@@ -118,21 +86,59 @@ const FamilyTreeComp: React.FC<Props> = props => {
     clickedLevel: undefined,
     treeDimensions: {width: width},
     targetId: undefined,
+    elementDimensions: [],
   });
   const [maxId, setMaxId] = useState<number | null>(null);
-  const flatListRef = useRef(null);
+  let flatListRef: FlatList<dataObjectType>;
+  let connectingNodeRef = useRef<Array<TouchableOpacity>>([]);
 
-  const {showStatus, isRefresh, treeData, targetId, treeDimensions} = state;
   const {
-    title,
-    titleStyle,
-    titleColor,
-    loaderColor,
+    showStatus,
+    isRefresh,
+    treeData,
+    targetId,
+    treeDimensions,
+    elementDimensions,
+  } = state;
+  const {
+    title = 'My Family Tree',
+    titleStyle = {
+      fontSize: 16,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    titleColor = 'black',
+    loaderColor = '#0095ff',
     isEditing,
     setIsEditing,
     editedText,
+    updateEditedText,
     isSubmitted,
     updateIsSubmitted,
+    pathColor = '#00ffd8',
+    siblingGap = 50,
+    imageStyle = {
+      width: '100%',
+      height: '100%',
+      borderRadius: 50,
+      resizeMode: 'cover',
+    },
+    nodeTitleColor = '#00ff00',
+    familyGap = 30,
+    strokeWidth = 5,
+    nodeStyle = {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    nodeTitleStyle = {
+      fontSize: 14,
+      fontWeight: 'bold',
+    },
+    scrollViewRef,
   } = props;
 
   const updateState = (updatedState: Partial<State>) => {
@@ -148,6 +154,58 @@ const FamilyTreeComp: React.FC<Props> = props => {
     setMaxId(maxId);
     console.log('MAX ID: ', maxId);
   }, []);
+
+  useEffect(() => {
+    if (maxId !== null) {
+      console.log('LENGTH : ', connectingNodeRef.current.length);
+      if (connectingNodeRef.current.length === maxId + 1) {
+        console.log('trieggered');
+        setElementDim();
+      }
+    }
+  }, [connectingNodeRef.current.length]);
+
+  const setElementDim = () => {
+    let temp: LooseObject = {};
+    connectingNodeRef.current.forEach((eleRef, i) => {
+      console.log('REFRENCES : ', eleRef !== undefined, i);
+      if (eleRef) {
+        measurePromise(eleRef).then(res => {
+          console.log('TEMP: 2', i);
+          temp['' + i] = res;
+          if (i === maxId!) {
+            console.log('targetId ', targetId);
+            if (targetId !== undefined) {
+              console.log('flatListRef ', temp['' + targetId]);
+              console.log('flatListRef ', temp);
+              if (temp['' + targetId]) {
+                flatListRef.scrollToOffset({
+                  offset: temp['' + targetId].x - 150,
+                  animated: true,
+                });
+                scrollViewRef.current?.scrollTo({
+                  x: 0,
+                  y: temp['' + targetId].y,
+                  animated: false,
+                });
+              }
+            }
+          }
+        });
+      }
+    });
+  };
+
+  const measurePromise = (
+    eleRef: TouchableOpacity,
+  ): Promise<{x: number; y: number}> => {
+    return new Promise((resolve, reject) => {
+      eleRef.measure((x, y, width, height, pageX, pageY) => {
+        console.log('times, ');
+        resolve({x: pageX, y: pageY});
+      });
+    });
+  };
 
   const isShowStatusExist = (i: number) => {
     const stringId = '' + i;
@@ -171,6 +229,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
       },
       isRefresh: true,
       clickedLevel: level,
+      targetId: i,
     };
     if (!isShowStatusExist(i)) {
       temp['' + i] = false;
@@ -179,6 +238,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
       temp['' + i] = !temp['' + i];
       updateState({showStatus: temp, ...updatedState});
     }
+    connectingNodeRef.current = [];
   };
 
   useEffect(() => {
@@ -197,7 +257,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
     let isActive = true;
     function submitData() {
       if (isSubmitted) {
-        console.log('changed ', editedText, isEditing.type, targetId);
         switch (isEditing.type) {
           case 'parent':
             if (isActive) {
@@ -232,19 +291,17 @@ const FamilyTreeComp: React.FC<Props> = props => {
     };
   }, [isSubmitted]);
 
-  const addParent = (id: number, selectedLevel: number, hasSpouse: boolean) => {
+  const addData = (id: number, selectedLevel: number, hasSpouse: boolean) => {
     setIsEditing({modalVisible: true, selectedLevel, hasSpouse});
     updateState({targetId: id});
   };
 
-  let updatedData: dataObjectType | undefined = undefined;
   const updateParentData = (
     data: dataObjectType,
     newData: editedTextParents,
   ) => {
-    updatedData = {
+    let updatedData: dataObjectType = {
       id: data.id + 1,
-      _comment: `${newData.fatherText.name} and Family`,
       name: newData.fatherText.name,
       spouse: newData.motherText.name,
       spouseProfile: profileUrl,
@@ -252,9 +309,10 @@ const FamilyTreeComp: React.FC<Props> = props => {
       profile: profileUrl,
       children: [props.data[0]],
     };
+    console.log('TREE DATA UPDATED: ', updatedData);
     setIsEditing({modalVisible: false, type: undefined});
     updateIsSubmitted(false);
-    updateState({treeData: [updatedData]});
+    updateState({treeData: [updatedData], isRefresh: true});
   };
 
   const updateSpouseOrChildData = (
@@ -281,7 +339,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
     } else if (type === 'child') {
       let temp = newValue as editedTextChild;
       let childData: Partial<dataObjectType> = {
-        _comment: `${temp.childText.name} and family`,
         name: temp.childText.name,
         spouse: temp.spouseText?.name ?? null,
         profile: temp.childText.profile,
@@ -315,8 +372,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
           return prevId;
         }
       });
-      console.log('CHANGED DATA: ', JSON.stringify(treeData));
-      // console.log('new value: ', jp.query(treeData, '$..id'));
     }
     setIsEditing({modalVisible: false, type: undefined});
     updateIsSubmitted(false);
@@ -325,10 +380,15 @@ const FamilyTreeComp: React.FC<Props> = props => {
   const renderTree = (data: Array<dataObjectType>, level: number) => {
     return (
       <FlatList
-        ref={flatListRef}
+        ref={ref => {
+          if (ref !== null) {
+            flatListRef = ref;
+          }
+        }}
         data={data}
         horizontal={true}
-        contentContainerStyle={{padding: 50}}
+        contentContainerStyle={{padding: 50, backgroundColor: '#DAE6E4'}}
+        showsHorizontalScrollIndicator={false}
         keyExtractor={(item, index) => `${item.name} + ${item.spouse}`}
         listKey={(item, index) => `${item.name} + ${item.spouse}`}
         initialScrollIndex={0}
@@ -340,8 +400,8 @@ const FamilyTreeComp: React.FC<Props> = props => {
               style={{
                 justifyContent: 'center',
                 alignItems: 'center',
-                paddingLeft: props.siblingGap / 2,
-                paddingRight: props.siblingGap / 2,
+                paddingLeft: siblingGap / 2,
+                paddingRight: siblingGap / 2,
               }}
               onLayout={({nativeEvent}) => {
                 if (level === 1) {
@@ -365,11 +425,11 @@ const FamilyTreeComp: React.FC<Props> = props => {
                   alignItems: 'center',
                 }}>
                 <TouchableOpacity
-                  style={props.nodeStyle}
-                  onPress={() => addParent(item.id, level, spouse !== null)}>
+                  style={nodeStyle}
+                  onPress={() => addData(item.id, level, spouse !== null)}>
                   <ImageBackground
                     source={{uri: info.profile}}
-                    style={{...props.imageStyle, alignItems: 'center'}}
+                    style={{...imageStyle, alignItems: 'center'}}
                     borderRadius={50}>
                     <Text
                       style={{
@@ -406,8 +466,8 @@ const FamilyTreeComp: React.FC<Props> = props => {
                             }
                             x2="50%"
                             y2="100%"
-                            stroke={props.pathColor}
-                            strokeWidth={props.strokeWidth}
+                            stroke={pathColor}
+                            strokeWidth={strokeWidth}
                           />
                         </Svg>
                       )}
@@ -416,32 +476,27 @@ const FamilyTreeComp: React.FC<Props> = props => {
                         style={{flexDirection: 'row', alignItems: 'center'}}>
                         <Svg
                           height="12"
-                          width={hasChildren(item) ? '53%' : '80%'}
-                          style={{justifyContent: 'space-between'}}>
+                          width={hasChildren(item) ? '53%' : '80%'}>
                           <Line
                             x1="0%"
-                            y1="0"
+                            y1="50%"
                             x2="100%"
-                            y2="0"
-                            stroke={props.pathColor}
-                            strokeWidth={props.strokeWidth * 2}
-                          />
-                          <Line
-                            x1="0%"
-                            y1="100%"
-                            x2="100%"
-                            y2="100%"
-                            stroke={props.pathColor}
-                            strokeWidth={props.strokeWidth * 2}
+                            y2="50%"
+                            stroke={pathColor}
+                            strokeWidth={strokeWidth}
                           />
                         </Svg>
                         {hasChildren(item) && (
                           <TouchableOpacity
+                            ref={ref => {
+                              if (ref !== null)
+                                connectingNodeRef.current[id] = ref;
+                            }}
                             onPress={e => toggleShowHide(id, e, level)}>
                             <View
                               style={[
                                 styles.nodesLinkContainer,
-                                {backgroundColor: props.pathColor},
+                                {backgroundColor: '#30AD4A'},
                               ]}
                             />
                           </TouchableOpacity>
@@ -450,19 +505,11 @@ const FamilyTreeComp: React.FC<Props> = props => {
                         <Svg height="12" width="50%">
                           <Line
                             x1="0%"
-                            y1="0"
+                            y1="50%"
                             x2="100%"
-                            y2="0"
-                            stroke={props.pathColor}
-                            strokeWidth={props.strokeWidth * 2}
-                          />
-                          <Line
-                            x1="0%"
-                            y1="100%"
-                            x2="100%"
-                            y2="100%"
-                            stroke={props.pathColor}
-                            strokeWidth={props.strokeWidth * 2}
+                            y2="50%"
+                            stroke={pathColor}
+                            strokeWidth={strokeWidth}
                           />
                         </Svg>
                       </View>
@@ -474,21 +521,21 @@ const FamilyTreeComp: React.FC<Props> = props => {
                               y1="0%"
                               x2="50%"
                               y2="95%"
-                              stroke={props.pathColor}
-                              strokeWidth={props.strokeWidth}
+                              stroke={pathColor}
+                              strokeWidth={strokeWidth}
                             />
                           </Svg>
                         )}
                     </View>
                     <View
                       style={{
-                        ...props.nodeStyle,
+                        ...nodeStyle,
                         alignSelf: 'center',
                       }}>
                       <ImageBackground
                         source={{uri: info.spouseProfile}}
                         style={{
-                          ...props.imageStyle,
+                          ...imageStyle,
                           alignItems: 'center',
                         }}
                         borderRadius={50}>
@@ -499,7 +546,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
                             ...props.nodeTitleStyle,
                             color: props.nodeTitleColor,
                           }}>
-                          {info.spouse}
+                          {info.name}
                         </Text>
                       </ImageBackground>
                     </View>
@@ -531,8 +578,8 @@ const FamilyTreeComp: React.FC<Props> = props => {
                               y1="0"
                               x2="50%"
                               y2="100%"
-                              stroke={props.pathColor}
-                              strokeWidth={props.strokeWidth}
+                              stroke={pathColor}
+                              strokeWidth={strokeWidth}
                             />
                             {/* Right side horizontal line */}
                             {hasChildren(item) &&
@@ -540,11 +587,11 @@ const FamilyTreeComp: React.FC<Props> = props => {
                               item.children.length - 1 !== index && (
                                 <Line
                                   x1="100%"
-                                  y1={props.strokeWidth / 2}
+                                  y1={strokeWidth / 2}
                                   x2="50%"
-                                  y2={props.strokeWidth / 2}
-                                  stroke={props.pathColor}
-                                  strokeWidth={props.strokeWidth}
+                                  y2={strokeWidth / 2}
+                                  stroke={pathColor}
+                                  strokeWidth={strokeWidth}
                                 />
                               )}
                             {/* Left side horizontal line */}
@@ -553,11 +600,11 @@ const FamilyTreeComp: React.FC<Props> = props => {
                               index !== 0 && (
                                 <Line
                                   x1="50%"
-                                  y1={props.strokeWidth / 2}
+                                  y1={strokeWidth / 2}
                                   x2="0%"
-                                  y2={props.strokeWidth / 2}
-                                  stroke={props.pathColor}
-                                  strokeWidth={props.strokeWidth}
+                                  y2={strokeWidth / 2}
+                                  stroke={pathColor}
+                                  strokeWidth={strokeWidth}
                                 />
                               )}
                           </Svg>
@@ -565,16 +612,16 @@ const FamilyTreeComp: React.FC<Props> = props => {
                         </View>
                         <View
                           style={{
-                            height: props.strokeWidth,
+                            height: strokeWidth,
                             backgroundColor:
                               hasChildren(item) &&
                               item.children.length - 1 !== index
-                                ? props.pathColor
+                                ? pathColor
                                 : 'transparent',
                             width:
                               hasChildren(child) &&
                               child.children.length - 1 !== index
-                                ? level * props.familyGap
+                                ? level * familyGap
                                 : 0,
                           }}
                         />
@@ -611,7 +658,5 @@ const FamilyTreeComp: React.FC<Props> = props => {
     </View>
   );
 };
-
-FamilyTreeComp.defaultProps = defaultProps;
 
 export default FamilyTreeComp;
