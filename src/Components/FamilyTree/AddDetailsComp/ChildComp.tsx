@@ -8,17 +8,21 @@ export type Props = {
   onSubmit: () => void;
 };
 
-const SpouseComp: React.FC<Props> = props => {
+const ChildComp: React.FC<Props> = props => {
   const {_onChangeText, onSubmit} = props;
   return (
     <View>
       <TextInputWithLabel
+        label="Enter Child Name"
+        onChangeText={val => _onChangeText(val, 'child')}
+      />
+      <TextInputWithLabel
         label="Enter Spouse Name"
-        onChangeText={val => _onChangeText(val, undefined)}
+        onChangeText={val => _onChangeText(val, 'spouse')}
       />
       <ButtonWithLabel label="Submit" onClick={onSubmit} />
     </View>
   );
 };
 
-export default SpouseComp;
+export default ChildComp;

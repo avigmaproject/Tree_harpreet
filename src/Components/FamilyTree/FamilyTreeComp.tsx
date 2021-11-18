@@ -12,11 +12,19 @@ import {
   ImageStyle,
   GestureResponderEvent,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, {Line} from 'react-native-svg';
 import {editedTextType} from '.';
-import {editedTextParents, isEditingType} from '../../../App';
+import {
+  editedTextChild,
+  editedTextParents,
+  editedTextSpouse,
+  isEditingType,
+} from '../../../App';
+import {profileUrl} from '../../constants/constants';
 import styles from './styles';
+const jp = require('jsonpath');
 
 const {width} = Dimensions.get('screen');
 
@@ -30,8 +38,6 @@ export type dataObjectType = {
   name: string;
   spouse: string | null;
   spouseProfile: string;
-  dob: string;
-  dod: null | string;
   profile: string;
   order: number;
   children: Array<dataObjectType>;
@@ -57,8 +63,6 @@ export type Props = {
   updateEditedText: (val: editedTextType) => void;
   isSubmitted: boolean;
   updateIsSubmitted: (val: boolean) => void;
-  maxLevel: number;
-  updateMaxLevel: (val: number) => void;
 };
 
 const defaultProps: Partial<Props> = {
@@ -101,7 +105,7 @@ type State = {
   isRefresh: boolean;
   clickedPos: {x: number; y: number} | undefined;
   clickedLevel: number | undefined;
-  treeDimensions: {width: number};
+  treeDimensions: {width: number; height?: number};
   targetId: number | undefined;
 };
 
@@ -115,10 +119,10 @@ const FamilyTreeComp: React.FC<Props> = props => {
     treeDimensions: {width: width},
     targetId: undefined,
   });
-  const [maxLevelCount, setMaxLevelCount] = useState(0);
+  const [maxId, setMaxId] = useState<number | null>(null);
   const flatListRef = useRef(null);
 
-  const {showStatus, isRefresh, treeData, targetId} = state;
+  const {showStatus, isRefresh, treeData, targetId, treeDimensions} = state;
   const {
     title,
     titleStyle,
@@ -129,8 +133,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
     editedText,
     isSubmitted,
     updateIsSubmitted,
-    maxLevel,
-    updateMaxLevel,
   } = props;
 
   const updateState = (updatedState: Partial<State>) => {
@@ -141,10 +143,10 @@ const FamilyTreeComp: React.FC<Props> = props => {
     return member.children && member.children.length;
   };
 
-  let tempMaxLevel = 0;
   useEffect(() => {
-    console.log(tempMaxLevel);
-    updateMaxLevel(tempMaxLevel);
+    const maxId = Math.max(...jp.query(treeData, '$..id'));
+    setMaxId(maxId);
+    console.log('MAX ID: ', maxId);
   }, []);
 
   const isShowStatusExist = (i: number) => {
@@ -181,24 +183,14 @@ const FamilyTreeComp: React.FC<Props> = props => {
 
   useEffect(() => {
     if (isRefresh) {
+      const maxId = Math.max(...jp.query(treeData, '$..id'));
+      setMaxId(maxId);
       updateState({isRefresh: false});
     }
   }, [isRefresh]);
 
   const totalWords = (str: string) => {
     return str.split(' ').length;
-  };
-
-  const isParentDataValid = (data: editedTextParents): boolean => {
-    if (
-      data.fatherText.name !== '' &&
-      data.fatherText.dob !== '' &&
-      data.fatherText.profile !== ''
-    ) {
-      if (data.motherText.name !== '' && data.motherText.profile) {
-        return true;
-      } else return false;
-    } else return false;
   };
 
   useEffect(() => {
@@ -208,23 +200,30 @@ const FamilyTreeComp: React.FC<Props> = props => {
         console.log('changed ', editedText, isEditing.type, targetId);
         switch (isEditing.type) {
           case 'parent':
-            if (isParentDataValid(editedText as editedTextParents)) {
-              if (isActive) {
-                updateParentData(
-                  treeData[0],
-                  targetId!,
-                  editedText as editedTextParents,
-                );
-              }
-            } else {
-              Alert.alert('Please fill data!');
+            if (isActive) {
+              updateParentData(treeData[0], editedText as editedTextParents);
             }
             break;
           case 'spouse':
+            if (isActive) {
+              updateSpouseOrChildData(
+                editedText as editedTextSpouse,
+                targetId!,
+                'spouse',
+              );
+            }
             break;
           case 'child':
+            if (isActive) {
+              updateSpouseOrChildData(
+                editedText as editedTextSpouse,
+                targetId!,
+                'child',
+              );
+            }
             break;
         }
+        updateState({isRefresh: true});
       }
     }
     submitData();
@@ -241,7 +240,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
   let updatedData: dataObjectType | undefined = undefined;
   const updateParentData = (
     data: dataObjectType,
-    targetId: number,
     newData: editedTextParents,
   ) => {
     updatedData = {
@@ -249,18 +247,79 @@ const FamilyTreeComp: React.FC<Props> = props => {
       _comment: `${newData.fatherText.name} and Family`,
       name: newData.fatherText.name,
       spouse: newData.motherText.name,
-      spouseProfile:
-        'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
-      dob: '03/03/1925',
-      dod: null,
+      spouseProfile: profileUrl,
       order: 1,
-      profile:
-        'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
+      profile: profileUrl,
       children: [props.data[0]],
     };
     setIsEditing({modalVisible: false, type: undefined});
     updateIsSubmitted(false);
     updateState({treeData: [updatedData]});
+  };
+
+  const updateSpouseOrChildData = (
+    newValue: editedTextSpouse | editedTextChild,
+    targetId: number,
+    type: 'spouse' | 'child',
+  ) => {
+    if (type === 'spouse') {
+      if ('spouseText' in newValue) {
+        jp.apply(
+          treeData,
+          `$..children[?(@.id ===${targetId})]`,
+          (value: dataObjectType) => ({
+            ...value,
+            spouse: newValue.spouseText.name,
+            spouseProfile: newValue.spouseText.profile,
+          }),
+        );
+        console.log(
+          'new value: ',
+          jp.query(treeData, '$..children[?(@.id === 1)]'),
+        );
+      }
+    } else if (type === 'child') {
+      let temp = newValue as editedTextChild;
+      let childData: Partial<dataObjectType> = {
+        _comment: `${temp.childText.name} and family`,
+        name: temp.childText.name,
+        spouse: temp.spouseText?.name ?? null,
+        profile: temp.childText.profile,
+        spouseProfile: temp.spouseText?.profile ?? profileUrl,
+      };
+      jp.apply(
+        treeData,
+        `$..children[?(@.id ===${targetId})]`,
+        (value: dataObjectType) => ({
+          ...value,
+          children: value.children
+            ? [
+                ...value.children,
+                {
+                  ...childData,
+                  id: -1,
+                  order: value.children[value.children.length - 1].order + 1,
+                },
+              ]
+            : [{...childData, id: value.id - 1, order: 1}],
+        }),
+      );
+      let prevId: number | undefined = undefined;
+      jp.apply(treeData, '$..id', (val: number) => {
+        // console.log('id: ', val);
+        if (prevId === undefined) {
+          prevId = 1;
+          return 1;
+        } else {
+          prevId += 1;
+          return prevId;
+        }
+      });
+      console.log('CHANGED DATA: ', JSON.stringify(treeData));
+      // console.log('new value: ', jp.query(treeData, '$..id'));
+    }
+    setIsEditing({modalVisible: false, type: undefined});
+    updateIsSubmitted(false);
   };
 
   const renderTree = (data: Array<dataObjectType>, level: number) => {
@@ -269,14 +328,13 @@ const FamilyTreeComp: React.FC<Props> = props => {
         ref={flatListRef}
         data={data}
         horizontal={true}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{padding: 50, backgroundColor: '#fff'}}
+        contentContainerStyle={{padding: 50}}
         keyExtractor={(item, index) => `${item.name} + ${item.spouse}`}
         listKey={(item, index) => `${item.name} + ${item.spouse}`}
         initialScrollIndex={0}
         renderItem={({item, index}) => {
-          const {name, spouse, dob, dod, profile, id, spouseProfile} = item;
-          const info = {name, spouse, dob, dod, profile, spouseProfile};
+          const {name, spouse, profile, id, spouseProfile} = item;
+          const info = {name, spouse, profile, spouseProfile};
           return (
             <View
               style={{
@@ -455,8 +513,8 @@ const FamilyTreeComp: React.FC<Props> = props => {
                 {(isShowStatusExist(id) ? showStatus['' + id] : true) &&
                   hasChildren(item) &&
                   item.children.map((child, index) => {
-                    const {name, spouse, dob, dod, profile} = child;
-                    const info = {name, spouse, dob, dod, profile};
+                    const {name, spouse, profile} = child;
+                    const info = {name, spouse, profile};
                     return (
                       <View
                         key={child.name + child.spouse}
@@ -464,7 +522,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
                           {
                             flexDirection: 'row',
                           },
-                          // level === 1 && {marginLeft: 5},
+                          level === 1 && {marginLeft: 5},
                         ]}>
                         <View>
                           <Svg height="50" width="100%">
@@ -523,11 +581,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
                       </View>
                     );
                   })}
-                {(() => {
-                  if (!hasChildren(item) && maxLevel < level) {
-                    tempMaxLevel = level;
-                  }
-                })()}
               </View>
             </View>
           );
@@ -539,7 +592,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
   return (
     <View style={{flex: 1}}>
       <Text style={{...titleStyle, color: titleColor}}>{title}</Text>
-      {/* {isRefresh ? (
+      {isRefresh ? (
         <View
           style={{
             height: treeDimensions.height,
@@ -552,9 +605,9 @@ const FamilyTreeComp: React.FC<Props> = props => {
             size="large"
           />
         </View>
-      ) : ( */}
-      {!isRefresh && renderTree(treeData, 1)}
-      {/* )} */}
+      ) : (
+        renderTree(treeData, 1)
+      )}
     </View>
   );
 };

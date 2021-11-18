@@ -21,8 +21,6 @@ export type Props = {
   updateEditedText: (val: editedTextType) => void;
   isSubmitted: boolean;
   updateIsSubmitted: (val: boolean) => void;
-  maxLevel: number;
-  updateMaxLevel: (val: number) => void;
 };
 
 const FamilyTree: React.FC<Props> = props => {
@@ -34,8 +32,6 @@ const FamilyTree: React.FC<Props> = props => {
     updateEditedText,
     isSubmitted,
     updateIsSubmitted,
-    maxLevel,
-    updateMaxLevel,
   } = props;
 
   return (
@@ -62,8 +58,6 @@ const FamilyTree: React.FC<Props> = props => {
           updateEditedText={updateEditedText}
           isSubmitted={isSubmitted}
           updateIsSubmitted={updateIsSubmitted}
-          maxLevel={maxLevel}
-          updateMaxLevel={updateMaxLevel}
         />
       </ScrollView>
     </Fragment>

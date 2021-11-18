@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   Pressable,
   SafeAreaView,
@@ -12,10 +13,13 @@ import {
   View,
 } from 'react-native';
 import {TouchableOpacity} from 'react-native-gesture-handler';
+import ChildComp from './src/Components/FamilyTree/AddDetailsComp/ChildComp';
 import ParentComp from './src/Components/FamilyTree/AddDetailsComp/ParentComp';
+import SpouseComp from './src/Components/FamilyTree/AddDetailsComp/SpouseComp';
 import {dataObjectType} from './src/Components/FamilyTree/FamilyTreeComp';
 import FamilyTree from './src/Components/FamilyTree/index';
 import TextInputWithLabel from './src/Components/TextInputWithLabel';
+import {profileUrl} from './src/constants/constants';
 
 const SampleData = require('./src/assets/sample.json');
 
@@ -30,8 +34,6 @@ export type editedTextParents = {
   fatherText: {
     name: string;
     profile: string;
-    dob: string;
-    dod: string | null;
   };
   motherText: {
     name: string;
@@ -40,7 +42,14 @@ export type editedTextParents = {
 };
 
 export type editedTextChild = {
-  childText: Omit<dataObjectType, 'children'>;
+  childText: {
+    name: string;
+    profile: string;
+  };
+  spouseText: {
+    name: string;
+    profile: string;
+  };
 };
 
 export type isEditingType = {
@@ -60,8 +69,6 @@ const App: React.FC = props => {
     Partial<editedTextSpouse | editedTextParents | editedTextChild> | undefined
   >(undefined);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const [levelSelected, setLevelSelected] = useState(0);
-  const [maxLevel, setMaxLevel] = useState(1);
 
   const {modalVisible, selectedLevel, hasSpouse} = isEditing;
 
@@ -75,12 +82,16 @@ const App: React.FC = props => {
         setEditedText({...temp});
         break;
       }
-      case 'spouse':
+      case 'spouse': {
         let temp: editedTextSpouse = handleSpouseDataChange(val);
         setEditedText({...temp});
         break;
-      case 'child':
+      }
+      case 'child': {
+        let temp: editedTextChild = handleChildDataChange(val, type);
+        setEditedText({...temp});
         break;
+      }
     }
   };
 
@@ -94,16 +105,12 @@ const App: React.FC = props => {
     if (type === 'father') {
       temp.fatherText = {
         name: val,
-        profile:
-          'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
-        dob: '10/11/21',
-        dod: null,
+        profile: profileUrl,
       };
     } else if (type === 'mother') {
       temp.motherText = {
         name: val,
-        profile:
-          'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
+        profile: profileUrl,
       };
     }
     return temp;
@@ -117,14 +124,51 @@ const App: React.FC = props => {
       temp = {
         spouseText: {
           name: val,
-          profile:
-            'https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80',
+          profile: profileUrl,
         },
       };
     } else {
       temp.spouseText.name = val;
     }
     return temp;
+  };
+
+  const handleChildDataChange = (
+    val: string,
+    type?: string,
+  ): editedTextChild => {
+    let temp: Partial<editedTextChild> = {
+      ...(editedText as editedTextChild),
+    };
+    if (type === 'child') {
+      temp.childText = {
+        name: val,
+        profile: profileUrl,
+      };
+    } else if (type === 'spouse') {
+      temp.spouseText = {
+        name: val,
+        profile: profileUrl,
+      };
+    }
+    return temp as editedTextChild;
+  };
+
+  const onSubmitSpouseData = () => {
+    let regex = /[a-zA-Z]/g;
+    let spouseData = editedText as editedTextSpouse;
+    if (editedText === undefined) {
+      Alert.alert('Please fill data!');
+      return;
+    } else if (spouseData.spouseText && spouseData.spouseText.name === '') {
+      Alert.alert('Please fill data!');
+      return;
+    } else if (!regex.test(spouseData.spouseText.name)) {
+      Alert.alert('Please fill data!');
+      return;
+    } else {
+      setIsSubmitted(true);
+    }
   };
 
   const onSubmitParentData = () => {
@@ -147,8 +191,35 @@ const App: React.FC = props => {
     } else setIsSubmitted(true);
   };
 
+  const onSubmitChildData = () => {
+    let regex = /[a-zA-Z]/g;
+    let childData = editedText as editedTextChild;
+    if (editedText === undefined) {
+      Alert.alert('Please fill data!');
+      return;
+    } else if (!childData.childText) {
+      Alert.alert('Please fill data!');
+      return;
+    } else if (childData.spouseText !== undefined) {
+      if (
+        !regex.test(childData.spouseText.name) &&
+        childData.spouseText.name !== ''
+      ) {
+        Alert.alert('Please fill data!');
+        return;
+      } else if (!regex.test(childData.childText.name)) {
+        Alert.alert('Please fill data!');
+        return;
+      } else setIsSubmitted(true);
+    }
+    if (!regex.test(childData.childText.name)) {
+      Alert.alert('Please fill data!');
+      return;
+    } else setIsSubmitted(true);
+  };
+
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
+    <SafeAreaView style={{flex: 1}}>
       <FamilyTree
         data={SampleData}
         isEditing={isEditing}
@@ -157,8 +228,6 @@ const App: React.FC = props => {
         updateEditedText={setEditedText}
         isSubmitted={isSubmitted}
         updateIsSubmitted={setIsSubmitted}
-        maxLevel={maxLevel}
-        updateMaxLevel={setMaxLevel}
       />
       <Modal
         animationType="slide"
@@ -176,61 +245,100 @@ const App: React.FC = props => {
             style={styles.modalView}
             onPress={() => {}}
             pointerEvents={isSubmitted ? 'none' : 'auto'}>
-            {(() => {
-              switch (isEditing.type) {
-                case 'parent':
-                  return (
-                    <ParentComp
-                      _onChangeText={_onChangeText}
-                      onSubmit={onSubmitParentData}
-                    />
-                  );
-                case 'spouse':
-                  break;
-                case 'child':
-                  break;
-                default:
-                  return (
-                    <View>
-                      {selectedLevel === 1 && (
-                        <>
-                          <TouchableOpacity
-                            onPress={() => setIsEditing({type: 'parent'})}>
-                            <Text style={styles.optionsTextStyle}>
-                              Add Parent
-                            </Text>
-                          </TouchableOpacity>
-                          <View style={styles.separatorStyle} />
-                        </>
-                      )}
-                      {!hasSpouse && (
-                        <>
-                          <TouchableOpacity
-                            onPress={() => setIsEditing({type: 'spouse'})}>
-                            <Text style={styles.optionsTextStyle}>
-                              Add Spouse
-                            </Text>
-                          </TouchableOpacity>
-                          {hasSpouse && <View style={styles.separatorStyle} />}
-                        </>
-                      )}
-                      {hasSpouse && (
-                        <TouchableOpacity
-                          onPress={() => setIsEditing({type: 'child'})}>
-                          <Text style={styles.optionsTextStyle}>Add Child</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  );
-              }
-            })()}
-            {isSubmitted && (
-              <ActivityIndicator
-                animating={true}
-                size="large"
-                style={styles.centerInView}
-              />
+            {isEditing.type && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 20,
+                  marginHorizontal: 16,
+                }}>
+                <TouchableOpacity
+                  onPress={() => setIsEditing({type: undefined})}>
+                  <Image
+                    source={require('./src/assets/back.png')}
+                    resizeMode="contain"
+                    style={{width: 24, height: 24}}
+                  />
+                </TouchableOpacity>
+                <View style={{marginLeft: '10%'}}>
+                  <Text style={{fontSize: 18, fontWeight: '700'}}>
+                    Enter Details
+                  </Text>
+                </View>
+              </View>
             )}
+            <View style={{paddingHorizontal: 48, paddingBottom: 32}}>
+              {(() => {
+                switch (isEditing.type) {
+                  case 'parent':
+                    return (
+                      <ParentComp
+                        _onChangeText={_onChangeText}
+                        onSubmit={onSubmitParentData}
+                      />
+                    );
+                  case 'spouse':
+                    return (
+                      <SpouseComp
+                        _onChangeText={_onChangeText}
+                        onSubmit={onSubmitSpouseData}
+                      />
+                    );
+                  case 'child':
+                    return (
+                      <ChildComp
+                        _onChangeText={_onChangeText}
+                        onSubmit={onSubmitChildData}
+                      />
+                    );
+                  default:
+                    return (
+                      <View>
+                        {selectedLevel === 1 && (
+                          <>
+                            <TouchableOpacity
+                              onPress={() => setIsEditing({type: 'parent'})}>
+                              <Text style={styles.optionsTextStyle}>
+                                Add Parent
+                              </Text>
+                            </TouchableOpacity>
+                            <View style={styles.separatorStyle} />
+                          </>
+                        )}
+                        {!hasSpouse && (
+                          <>
+                            <TouchableOpacity
+                              onPress={() => setIsEditing({type: 'spouse'})}>
+                              <Text style={styles.optionsTextStyle}>
+                                Add Spouse
+                              </Text>
+                            </TouchableOpacity>
+                            {hasSpouse && (
+                              <View style={styles.separatorStyle} />
+                            )}
+                          </>
+                        )}
+                        {hasSpouse && (
+                          <TouchableOpacity
+                            onPress={() => setIsEditing({type: 'child'})}>
+                            <Text style={styles.optionsTextStyle}>
+                              Add Child
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                }
+              })()}
+              {isSubmitted && (
+                <ActivityIndicator
+                  animating={true}
+                  size="large"
+                  style={styles.centerInView}
+                />
+              )}
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -247,11 +355,9 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   modalView: {
-    margin: 20,
     backgroundColor: 'white',
     borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
+    paddingTop: 32,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
