@@ -25,12 +25,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  nodeTitleStyle: {
+  nodeTitleContainerStyle: {
     position: 'absolute',
+    alignSelf: 'center',
     paddingHorizontal: 8,
-    borderWidth: 1,
-    borderRadius: 5,
-    backgroundColor: '#fff',
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
+    backgroundColor: '#30AD4A',
   },
 });
 

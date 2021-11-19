@@ -6,10 +6,8 @@ import {
   Modal,
   Pressable,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
-  TouchableWithoutFeedback,
   View,
   TouchableOpacity,
 } from 'react-native';
@@ -172,7 +170,6 @@ const App: React.FC = props => {
   const onSubmitParentData = () => {
     let regex = /[a-zA-Z]/g;
     let parentData = editedText as editedTextParents;
-    console.log(parentData);
     if (editedText === undefined) {
       Alert.alert('Please fill data!');
       return;

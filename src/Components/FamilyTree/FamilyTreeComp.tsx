@@ -11,7 +11,6 @@ import {
   ViewStyle,
   ImageStyle,
   GestureResponderEvent,
-  Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -24,6 +23,7 @@ import {
   isEditingType,
 } from '../../../App';
 import {profileUrl} from '../../constants/constants';
+import {makeid} from '../../Utils/helperFunctions';
 import styles from './styles';
 const jp = require('jsonpath');
 
@@ -70,11 +70,9 @@ type State = {
   treeData: Array<dataObjectType>;
   showStatus: LooseObject;
   isRefresh: boolean;
-  clickedPos: {x: number; y: number} | undefined;
   clickedLevel: number | undefined;
   treeDimensions: {width: number; height?: number};
   targetId: number | undefined;
-  elementDimensions: Array<{x: number; y: number}>;
 };
 
 const FamilyTreeComp: React.FC<Props> = props => {
@@ -82,24 +80,15 @@ const FamilyTreeComp: React.FC<Props> = props => {
     treeData: props.data,
     showStatus: {},
     isRefresh: false,
-    clickedPos: undefined,
     clickedLevel: undefined,
     treeDimensions: {width: width},
     targetId: undefined,
-    elementDimensions: [],
   });
   const [maxId, setMaxId] = useState<number | null>(null);
   let flatListRef: FlatList<dataObjectType>;
   let connectingNodeRef = useRef<Array<TouchableOpacity>>([]);
 
-  const {
-    showStatus,
-    isRefresh,
-    treeData,
-    targetId,
-    treeDimensions,
-    elementDimensions,
-  } = state;
+  const {showStatus, isRefresh, treeData, targetId, treeDimensions} = state;
   const {
     title = 'My Family Tree',
     titleStyle = {
@@ -152,14 +141,11 @@ const FamilyTreeComp: React.FC<Props> = props => {
   useEffect(() => {
     const maxId = Math.max(...jp.query(treeData, '$..id'));
     setMaxId(maxId);
-    console.log('MAX ID: ', maxId);
   }, []);
 
   useEffect(() => {
     if (maxId !== null) {
-      console.log('LENGTH : ', connectingNodeRef.current.length);
       if (connectingNodeRef.current.length === maxId + 1) {
-        console.log('trieggered');
         setElementDim();
       }
     }
@@ -168,26 +154,25 @@ const FamilyTreeComp: React.FC<Props> = props => {
   const setElementDim = () => {
     let temp: LooseObject = {};
     connectingNodeRef.current.forEach((eleRef, i) => {
-      console.log('REFRENCES : ', eleRef !== undefined, i);
       if (eleRef) {
         measurePromise(eleRef).then(res => {
-          console.log('TEMP: 2', i);
           temp['' + i] = res;
           if (i === maxId!) {
-            console.log('targetId ', targetId);
             if (targetId !== undefined) {
-              console.log('flatListRef ', temp['' + targetId]);
-              console.log('flatListRef ', temp);
               if (temp['' + targetId]) {
-                flatListRef.scrollToOffset({
-                  offset: temp['' + targetId].x - 150,
-                  animated: true,
-                });
-                scrollViewRef.current?.scrollTo({
-                  x: 0,
-                  y: temp['' + targetId].y,
-                  animated: false,
-                });
+                if (flatListRef) {
+                  flatListRef.scrollToOffset({
+                    offset: temp['' + targetId].x - 150,
+                    animated: true,
+                  });
+                }
+                if (scrollViewRef) {
+                  scrollViewRef.current?.scrollTo({
+                    x: 0,
+                    y: temp['' + targetId].y,
+                    animated: false,
+                  });
+                }
               }
             }
           }
@@ -201,7 +186,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
   ): Promise<{x: number; y: number}> => {
     return new Promise((resolve, reject) => {
       eleRef.measure((x, y, width, height, pageX, pageY) => {
-        console.log('times, ');
         resolve({x: pageX, y: pageY});
       });
     });
@@ -223,10 +207,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
   ) => {
     const temp = {...showStatus};
     const updatedState = {
-      clickedPos: {
-        x: event.nativeEvent.pageX,
-        y: event.nativeEvent.pageY,
-      },
       isRefresh: true,
       clickedLevel: level,
       targetId: i,
@@ -282,7 +262,10 @@ const FamilyTreeComp: React.FC<Props> = props => {
             }
             break;
         }
-        updateState({isRefresh: true});
+        updateEditedText(undefined);
+        if (isEditing.type !== 'parent') {
+          updateState({isRefresh: true});
+        }
       }
     }
     submitData();
@@ -301,15 +284,14 @@ const FamilyTreeComp: React.FC<Props> = props => {
     newData: editedTextParents,
   ) => {
     let updatedData: dataObjectType = {
-      id: data.id + 1,
+      id: maxId! + 1,
       name: newData.fatherText.name,
       spouse: newData.motherText.name,
       spouseProfile: profileUrl,
       order: 1,
       profile: profileUrl,
-      children: [props.data[0]],
+      children: [treeData[0]],
     };
-    console.log('TREE DATA UPDATED: ', updatedData);
     setIsEditing({modalVisible: false, type: undefined});
     updateIsSubmitted(false);
     updateState({treeData: [updatedData], isRefresh: true});
@@ -330,10 +312,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
             spouse: newValue.spouseText.name,
             spouseProfile: newValue.spouseText.profile,
           }),
-        );
-        console.log(
-          'new value: ',
-          jp.query(treeData, '$..children[?(@.id === 1)]'),
         );
       }
     } else if (type === 'child') {
@@ -358,12 +336,11 @@ const FamilyTreeComp: React.FC<Props> = props => {
                   order: value.children[value.children.length - 1].order + 1,
                 },
               ]
-            : [{...childData, id: value.id - 1, order: 1}],
+            : [{...childData, id: maxId! + 1, order: 1}],
         }),
       );
       let prevId: number | undefined = undefined;
       jp.apply(treeData, '$..id', (val: number) => {
-        // console.log('id: ', val);
         if (prevId === undefined) {
           prevId = 1;
           return 1;
@@ -390,7 +367,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
         contentContainerStyle={{padding: 50, backgroundColor: '#DAE6E4'}}
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item, index) => `${item.name} + ${item.spouse}`}
-        listKey={(item, index) => `${item.name} + ${item.spouse}`}
+        listKey={makeid(4)}
         initialScrollIndex={0}
         renderItem={({item, index}) => {
           const {name, spouse, profile, id, spouseProfile} = item;
@@ -429,17 +406,17 @@ const FamilyTreeComp: React.FC<Props> = props => {
                   onPress={() => addData(item.id, level, spouse !== null)}>
                   <ImageBackground
                     source={{uri: info.profile}}
-                    style={{...imageStyle, alignItems: 'center'}}
+                    style={[imageStyle, {alignItems: 'center'}]}
                     borderRadius={50}>
-                    <Text
+                    <View
                       style={{
-                        ...styles.nodeTitleStyle,
+                        ...styles.nodeTitleContainerStyle,
                         bottom: -6 * totalWords(info.name),
-                        ...props.nodeTitleStyle,
-                        color: props.nodeTitleColor,
                       }}>
-                      {info.name}
-                    </Text>
+                      <Text style={[{color: nodeTitleColor}, nodeTitleStyle]}>
+                        {info.name}
+                      </Text>
+                    </View>
                   </ImageBackground>
                 </TouchableOpacity>
                 {info.spouse && (
@@ -527,27 +504,21 @@ const FamilyTreeComp: React.FC<Props> = props => {
                           </Svg>
                         )}
                     </View>
-                    <View
-                      style={{
-                        ...nodeStyle,
-                        alignSelf: 'center',
-                      }}>
+                    <View style={[nodeStyle, {alignSelf: 'center'}]}>
                       <ImageBackground
                         source={{uri: info.spouseProfile}}
-                        style={{
-                          ...imageStyle,
-                          alignItems: 'center',
-                        }}
+                        style={[imageStyle, {alignSelf: 'center'}]}
                         borderRadius={50}>
-                        <Text
+                        <View
                           style={{
-                            ...styles.nodeTitleStyle,
+                            ...styles.nodeTitleContainerStyle,
                             bottom: -6 * totalWords(info.name),
-                            ...props.nodeTitleStyle,
-                            color: props.nodeTitleColor,
                           }}>
-                          {info.name}
-                        </Text>
+                          <Text
+                            style={[{color: nodeTitleColor}, nodeTitleStyle]}>
+                            {info.spouse}
+                          </Text>
+                        </View>
                       </ImageBackground>
                     </View>
                   </View>
@@ -638,7 +609,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
 
   return (
     <View style={{flex: 1}}>
-      <Text style={{...titleStyle, color: titleColor}}>{title}</Text>
+      <Text style={[titleStyle, {color: titleColor}]}>{title}</Text>
       {isRefresh ? (
         <View
           style={{

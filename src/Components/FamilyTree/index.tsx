@@ -1,5 +1,5 @@
 import React, {Fragment, useRef} from 'react';
-import {SafeAreaView, ScrollView, StatusBar} from 'react-native';
+import {ScrollView} from 'react-native';
 import {
   editedTextChild,
   editedTextParents,
