@@ -2,6 +2,7 @@
    {
       "id":9,
       "name":"Rethinam",
+      "isMale":true,
       "spouse":"Pitchaial",
       "spouseProfile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80",
       "profile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80",
@@ -9,6 +10,7 @@
          {
             "id":8,
             "name":"AmalRaj",
+            "isMale":true,
             "spouse":"Jothi",
             "spouseProfile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80",
             "order":1,
@@ -17,6 +19,7 @@
                {
                   "id":7,
                   "name":"Layola",
+                  "isMale":false,
                   "spouse":"kamal",
                   "spouseProfile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80",
                   "order":1,
@@ -25,6 +28,7 @@
                      {
                         "id":6,
                         "name":"Judith",
+                        "isMale":false,
                         "spouse":"Amit",
                         "spouseProfile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80",
                         "order":1,
@@ -33,6 +37,7 @@
                      {
                         "id":5,
                         "name":"Judith",
+                        "isMale":false,
                         "spouse":"Ami",
                         "spouseProfile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80",
                         "order":2,
@@ -40,6 +45,7 @@
                         "children":[
                            {
                               "id":4,
+                              "isMale":true,
                               "name":"Arun",
                               "spouse":null,
                               "spouseProfile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80",
@@ -51,6 +57,7 @@
                      {
                         "id":3,
                         "name":"Alen",
+                        "isMale":true,
                         "spouse":"alen wife",
                         "spouseProfile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80",
                         "order":3,
@@ -61,6 +68,7 @@
                {
                   "id":2,
                   "name":"jerian",
+                  "isMale":true,
                   "spouse":null,
                   "order":2,
                   "profile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80"
@@ -68,6 +76,7 @@
                {
                   "id":1,
                   "name":"savage",
+                  "isMale":true,
                   "spouse":null,
                   "order":3,
                   "profile":"https://images.unsplash.com/photo-1520206444322-d2df0dd4e78e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1000&q=80"

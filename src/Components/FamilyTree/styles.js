@@ -2,7 +2,7 @@ import {StyleSheet} from 'react-native';
 
 const styles = StyleSheet.create({
   spouseConnectingPathContainer: {
-    height: '50%',
+    height: '90%',
     width: '50%',
     justifyContent: 'center',
     alignItems: 'center',
@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
   spouseInfoContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: 150,
+    height: 100,
     width: 200,
     paddingRight: 48,
   },

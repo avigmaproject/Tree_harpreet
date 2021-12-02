@@ -15,23 +15,27 @@ export type editedTextType =
 
 export type Props = {
   data: Array<dataObjectType>;
-  isEditing: isEditingType;
-  setIsEditing: (val: isEditingType) => void;
   editedText: Partial<editedTextType> | undefined;
+  isChildMale?: boolean;
   updateEditedText: (val: editedTextType | undefined) => void;
   isSubmitted: boolean;
   updateIsSubmitted: (val: boolean) => void;
+  optionsVisibility: isEditingType;
+  updateOptionsVisibility: (val: isEditingType) => void;
+  updateProfilePic: (val: string) => void;
 };
 
 const FamilyTree: React.FC<Props> = props => {
   const {
     data,
-    isEditing,
-    setIsEditing,
     editedText,
+    isChildMale,
     updateEditedText,
     isSubmitted,
     updateIsSubmitted,
+    optionsVisibility,
+    updateOptionsVisibility,
+    updateProfilePic,
   } = props;
 
   const scrollViewRef = useRef(null);
@@ -51,6 +55,7 @@ const FamilyTree: React.FC<Props> = props => {
           nodeStyle={{
             width: 100,
             height: 100,
+            marginBottom: 6,
             justifyContent: 'center',
             alignItems: 'center',
           }}
@@ -62,13 +67,15 @@ const FamilyTree: React.FC<Props> = props => {
             color: '#fff',
             borderWidth: 0,
           }}
-          isEditing={isEditing}
-          setIsEditing={setIsEditing}
+          isEditing={optionsVisibility}
+          setIsEditing={updateOptionsVisibility}
           editedText={editedText}
+          isChildMale={isChildMale}
           updateEditedText={updateEditedText}
           isSubmitted={isSubmitted}
           updateIsSubmitted={updateIsSubmitted}
           scrollViewRef={scrollViewRef}
+          updateProfilePic={updateProfilePic}
         />
       </ScrollView>
     </Fragment>

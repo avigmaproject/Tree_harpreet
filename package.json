@@ -14,6 +14,7 @@
     "@react-navigation/native": "^6.0.6",
     "@react-navigation/stack": "^6.0.11",
     "jsonpath": "^1.1.1",
+    "radio-buttons-react-native": "^1.0.4",
     "react": "17.0.2",
     "react-native": "0.66.2",
     "react-native-gesture-handler": "^1.10.3",
