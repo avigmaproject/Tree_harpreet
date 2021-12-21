@@ -24,6 +24,7 @@ type Props = {
   isSpouseActive: boolean;
   isChildActive: boolean;
   _onChangeText: (val: string, type: string | undefined) => void;
+  clearText: () => void;
   onSubmitParentData: () => void;
   onSubmitSpouseData: () => void;
   onSubmitChildData: () => void;
@@ -40,6 +41,7 @@ const AddOptionsModal: React.FC<Props> = props => {
     isChildActive,
     isSpouseActive,
     _onChangeText,
+    clearText,
     onSubmitParentData,
     onSubmitSpouseData,
     onSubmitChildData,
@@ -47,6 +49,12 @@ const AddOptionsModal: React.FC<Props> = props => {
     isSubmitted,
     profilePic,
   } = props;
+
+  const onBackPress = () => {
+    updateVisibility({...visibleObject, type: undefined});
+    clearText();
+  };
+
   return (
     <Modal
       transparent={true}
@@ -66,9 +74,7 @@ const AddOptionsModal: React.FC<Props> = props => {
                 <ParentComp
                   _onChangeText={_onChangeText}
                   onSubmit={onSubmitParentData}
-                  onBackPress={() =>
-                    updateVisibility({...visibleObject, type: undefined})
-                  }
+                  onBackPress={onBackPress}
                   isBackVisible={visibleObject.type !== undefined}
                 />
               );
@@ -77,9 +83,7 @@ const AddOptionsModal: React.FC<Props> = props => {
                 <SpouseComp
                   _onChangeText={_onChangeText}
                   onSubmit={onSubmitSpouseData}
-                  onBackPress={() =>
-                    updateVisibility({...visibleObject, type: undefined})
-                  }
+                  onBackPress={onBackPress}
                   isBackVisible={visibleObject.type !== undefined}
                 />
               );
@@ -89,10 +93,7 @@ const AddOptionsModal: React.FC<Props> = props => {
                   _onChangeText={_onChangeText}
                   onSubmit={onSubmitChildData}
                   setIsChildMale={setIsChildMale}
-                  onBackPress={() => {
-                    console.log('visible: ', visibleObject);
-                    updateVisibility({...visibleObject, type: undefined});
-                  }}
+                  onBackPress={onBackPress}
                   isBackVisible={visibleObject.type !== undefined}
                 />
               );

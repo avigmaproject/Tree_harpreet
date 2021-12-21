@@ -226,6 +226,7 @@ const App: React.FC = props => {
         isSpouseActive={!hasSpouse}
         isChildActive={hasSpouse}
         _onChangeText={_onChangeText}
+        clearText={() => setEditedText(undefined)}
         onSubmitParentData={onSubmitParentData}
         onSubmitSpouseData={onSubmitSpouseData}
         onSubmitChildData={onSubmitChildData}

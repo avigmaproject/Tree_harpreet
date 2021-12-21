@@ -135,7 +135,7 @@ const FamilyTreeComp: React.FC<Props> = props => {
     isChildMale,
     updateProfilePic,
   } = props;
-
+  const isFirstTime = useRef(1);
   const updateState = (updatedState: Partial<State>) => {
     setState({...state, ...updatedState});
   };
@@ -172,6 +172,17 @@ const FamilyTreeComp: React.FC<Props> = props => {
 
   useEffect(() => {
     console.log('state updated: ', state);
+    if (isFirstTime.current === 1) {
+      if (flatListRef) {
+        flatListRef.scrollToOffset({
+          offset: treeDimensions.width / 2.25,
+          animated: true,
+        });
+      }
+      setTimeout(() => {
+        isFirstTime.current = 0;
+      }, 950);
+    }
   }, [state]);
 
   const setElementDim = () => {
@@ -439,18 +450,18 @@ const FamilyTreeComp: React.FC<Props> = props => {
                 level > 1 && spouse !== null && {marginLeft: 200},
               ]}
               onLayout={({nativeEvent}) => {
+                const {height, width} = Dimensions.get('window');
+                let dim = {
+                  height: nativeEvent.layout.height,
+                  width: nativeEvent.layout.width,
+                };
+                if (nativeEvent.layout.height > height) {
+                  dim.height = nativeEvent.layout.height;
+                }
+                if (nativeEvent.layout.width > width) {
+                  dim.width = nativeEvent.layout.width;
+                }
                 if (level === 1) {
-                  const {height, width} = Dimensions.get('window');
-                  let dim = {
-                    height: nativeEvent.layout.height,
-                    width: nativeEvent.layout.width,
-                  };
-                  if (nativeEvent.layout.height > height) {
-                    dim.height = height;
-                  }
-                  if (nativeEvent.layout.width > width) {
-                    dim.width = width;
-                  }
                   updateState({treeDimensions: dim});
                 }
               }}>
@@ -685,7 +696,6 @@ const FamilyTreeComp: React.FC<Props> = props => {
         <View
           style={{
             height: treeDimensions.height,
-            width: treeDimensions.width,
             ...styles.centeredView,
           }}>
           <ActivityIndicator
